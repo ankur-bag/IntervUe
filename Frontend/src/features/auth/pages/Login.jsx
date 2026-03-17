@@ -1,5 +1,6 @@
 import React from 'react'
 import '../auth.form.scss'
+import { Navigate,Link } from 'react-router'
 const Login = () => {
 
         const handle = (e)=>{
@@ -27,6 +28,8 @@ const Login = () => {
 
 
             </form>
+                        <p>Don't have an account? Please <Link to={"/register"}>Register</Link></p>
+
         </div>
     </main>
   )
