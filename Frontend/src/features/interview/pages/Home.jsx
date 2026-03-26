@@ -168,6 +168,31 @@ const Home = () => {
         }
     }
 
+    const handleDownloadReport = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/interview/download-report/${analysisData._id || analysisData.id}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Download failed');
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Interview_Report_${new Date().getTime()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Download error:', err);
+            setError('Failed to download PDF report. ' + err.message);
+        }
+    };
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { 
@@ -296,7 +321,7 @@ const Home = () => {
                                     </div>
                                     <button 
                                         className='button primary-button download-btn glow' 
-                                        onClick={() => window.open(`${API_URL}/api/interview/download-report/${analysisData._id || analysisData.id}`, '_blank')}
+                                        onClick={handleDownloadReport}
                                     >
                                         <FileText size={18} />
                                         <span>Download Full PDF Report</span>

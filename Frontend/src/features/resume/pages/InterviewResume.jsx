@@ -97,8 +97,10 @@ const InterviewResume = () => {
                     personalInfo: getPersonalInfo()
                 })
             })
-
-            if (!response.ok) throw new Error('Download failed')
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Download failed');
+            }
 
             const blob = await response.blob()
             const url = window.URL.createObjectURL(blob)
@@ -110,7 +112,7 @@ const InterviewResume = () => {
             document.body.removeChild(a)
             window.URL.revokeObjectURL(url)
         } catch (err) {
-            setError('Failed to download PDF. Please try again.')
+            setError(`Failed to download PDF: ${err.message}`)
         } finally {
             setDownloading(false)
         }
