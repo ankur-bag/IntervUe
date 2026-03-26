@@ -18,6 +18,7 @@ ${selfDescription}
 Return a JSON object with:
 1. "skills": array of technical/professional skills (e.g. ["React", "Node.js", "Python", "Machine Learning"])
 2. "searchQuery": a short, effective job search query for Indeed (e.g. "MERN stack developer" or "Frontend React developer" or "Python data scientist"). Keep it to 2-4 words max.
+3. "preferredLocation": extract city/country if mentioned (e.g. "Bangalore" or "USA"), otherwise default to "India".
 
 Return ONLY the JSON object, no other text.`
 
@@ -39,9 +40,29 @@ Return ONLY the JSON object, no other text.`
         // Fallback query if AI fails
         return { 
             skills: ['Full Stack'], 
-            searchQuery: selfDescription.split(' ').slice(0, 3).join(' ') || 'Software Engineer' 
+            searchQuery: selfDescription.split(' ').slice(0, 3).join(' ') || 'Software Engineer',
+            preferredLocation: 'India'
         }
     }
+}
+
+/**
+ * Map location/country name to ISO 2-letter country code for Apify Indeed Scraper
+ */
+function getCountryCode(location = 'India') {
+    const map = {
+        'usa': 'US', 'united states': 'US', 'us': 'US',
+        'india': 'IN', 'in': 'IN',
+        'uk': 'GB', 'united kingdom': 'GB', 'gb': 'GB',
+        'canada': 'CA', 'ca': 'CA',
+        'australia': 'AU', 'au': 'AU',
+        'germany': 'DE', 'de': 'DE',
+        'france': 'FR', 'fr': 'FR',
+        'singapore': 'SG', 'sg': 'SG',
+        'uae': 'AE', 'dubai': 'AE'
+    }
+    const loc = location.toLowerCase().trim()
+    return map[loc] || 'IN' // Default to India if not matched
 }
 
 /**
@@ -50,18 +71,20 @@ Return ONLY the JSON object, no other text.`
 async function fetchJobsFromApify(searchQuery, location = 'India') {
     const ACTOR_ID = 'hMvNSpz3JnHgl5jkh' // Indeed Scraper actor
     const url = `https://api.apify.com/v2/acts/${ACTOR_ID}/run-sync-get-dataset-items?token=${APIFY_API_KEY}`
+    
+    const countryCode = getCountryCode(location)
 
     const input = {
         position: searchQuery,
-        country: "IN",
+        country: countryCode,
         location: location,
-        maxItems: 12,
+        maxItems: 20, // Increased for better filtering
         parseCompanyDetails: false,
         saveOnlyUniqueItems: true,
         followApplyRedirects: false,
     }
 
-    console.log(`[Jobs] Requesting Apify Indeed Scraper for queries: "${searchQuery}" in "${location}"`)
+    console.log(`[Jobs] Requesting Apify Indeed Scraper for queries: "${searchQuery}" in "${location}" (${countryCode})`)
     try {
         const response = await axios.post(url, input, {
             headers: { 'Content-Type': 'application/json' },
@@ -145,14 +168,14 @@ async function getCachedOrFetchJobs(searchQuery, location = 'India') {
  */
 async function suggestJobs(selfDescription) {
     try {
-        const { skills, searchQuery } = await extractSkillsAndQuery(selfDescription)
+        const { skills, searchQuery, preferredLocation } = await extractSkillsAndQuery(selfDescription)
 
         if (!searchQuery) {
             console.warn('[Jobs] No searchQuery extracted.')
             return { searchQuery: '', skills: [], jobs: [] }
         }
 
-        const rawJobs = await getCachedOrFetchJobs(searchQuery, 'India')
+        const rawJobs = await getCachedOrFetchJobs(searchQuery, preferredLocation || 'India')
 
         if (!rawJobs || rawJobs.length === 0) {
             console.log('[Jobs] No jobs found for query.')

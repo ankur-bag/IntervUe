@@ -21,6 +21,7 @@ import {
     MapPin,
     Briefcase
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import '../style/home.scss'
 
 const Home = () => {
@@ -129,14 +130,9 @@ const Home = () => {
             <div className='mesh-bg'></div>
             
             <header className='bento-nav'>
-                <Link to="/" className='back-link'>
-                    <ChevronLeft size={18} />
-                    <span>Back to Home</span>
+                <Link to="/" className='back-btn-minimal'>
+                    <ChevronLeft size={22} />
                 </Link>
-                <div className='status-pill'>
-                    <div className='indicator'></div>
-                    <span>AI Engine Ready</span>
-                </div>
             </header>
 
             <motion.div 
@@ -362,11 +358,11 @@ const Home = () => {
                                             <div className='q-details'>
                                                 <div className='q-detail-block'>
                                                     <span className='detail-label'>Why they ask this</span>
-                                                    <p>{q.intention || q.insights}</p>
+                                                    <ReactMarkdown>{q.intention || q.insights}</ReactMarkdown>
                                                 </div>
                                                 <div className='q-detail-block'>
                                                     <span className='detail-label'>Suggested approach</span>
-                                                    <p>{q.answer || q.strategy}</p>
+                                                    <ReactMarkdown>{q.answer || q.strategy}</ReactMarkdown>
                                                 </div>
                                             </div>
                                         </motion.div>

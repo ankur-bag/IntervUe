@@ -3,6 +3,7 @@ import '../auth.form.scss'
 import { Link } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router'
+import { motion } from 'framer-motion'
 
 const Login = () => {
     const { loading, handleLogin } = useAuth()

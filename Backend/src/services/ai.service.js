@@ -146,6 +146,11 @@ ${jobDescription}
 
 Self Description:
 ${selfDescription}
+
+INSTRUCTIONS FOR ANSWERS:
+- Keep technical answers CONCISE (max 3 sentences).
+- Keep behavioral answers CONCISE (max 5 sentences, STAR format).
+- Use markdown (e.g., **bold**) for emphasis where appropriate.
 `;
 
 
