@@ -10,50 +10,53 @@
     padding: 24px;
     position: relative;
     background: #000;
+    font-family: 'Inter', sans-serif;
 
     .mesh-bg {
         position: fixed;
         inset: 0;
-        background: radial-gradient(circle at 50% 0%, rgba($primary, 0.15) 0%, transparent 70%);
+        background: radial-gradient(circle at 50% 0%, rgba($primary, 0.12), transparent 70%);
         z-index: 0;
+        pointer-events: none;
     }
 
     .form-container {
         width: 100%;
-        max-width: 460px;
+        max-width: 440px;
         padding: 56px;
-        background: rgba(15, 15, 15, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 24px;
-        backdrop-filter: blur(24px);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 28px;
+        backdrop-filter: blur(40px);
         display: flex;
         flex-direction: column;
         gap: 40px;
         position: relative;
         z-index: 10;
-        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
-        animation: premiumEntrance 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-
-        &:hover { transform: none; } // No lift for auth cards
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+        animation: premiumEntrance 1s cubic-bezier(0.16, 1, 0.3, 1);
 
         .auth-header {
             text-align: center;
             .home-title { 
-                font-family: 'Google Sans Flex', sans-serif;
-                font-size: 2.5rem; 
-                font-weight: 700;
+                font-size: 2.25rem; 
+                font-weight: 400;
                 letter-spacing: -0.04em;
                 margin-bottom: 12px;
                 color: #fff;
                 
                 .highlight {
-                    color: $primary;
+                    background: linear-gradient(135deg, $primary, #ffc000);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    -webkit-text-fill-color: transparent;
                 }
             }
             .home-subtitle { 
                 font-size: 1rem; 
                 color: #888;
                 line-height: 1.5;
+                font-weight: 300;
             }
         }
     }
@@ -61,19 +64,18 @@
     .auth-form {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 28px;
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
 
             label {
-                font-family: 'Google Sans Flex', sans-serif;
                 font-size: 0.85rem;
-                font-weight: 500;
-                color: #ccc;
-                margin-left: 4px;
+                font-weight: 300;
+                color: #999;
+                margin-left: 2px;
             }
 
             input {
@@ -81,18 +83,18 @@
                 height: 52px;
                 background: rgba(255, 255, 255, 0.03);
                 border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 12px;
+                border-radius: 14px;
                 padding: 0 20px;
                 color: #fff;
-                font-family: 'Google Sans Code', monospace;
-                font-size: 0.95rem;
-                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                font-size: 1rem;
+                font-weight: 300;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
                 &:focus {
                     outline: none;
-                    border-color: rgba($primary, 0.5);
+                    border-color: rgba($primary, 0.4);
                     background: rgba(255, 255, 255, 0.05);
-                    box-shadow: 0 0 0 4px rgba($primary, 0.1);
+                    box-shadow: 0 0 0 4px rgba($primary, 0.05);
                 }
 
                 &::placeholder {
@@ -103,9 +105,19 @@
 
         .primary-button {
             margin-top: 12px;
-            height: 52px;
-            font-weight: 600;
+            height: 54px;
+            font-weight: 400;
             font-size: 1rem;
+            border-radius: 100px;
+            background: $primary;
+            color: #000;
+            border: none;
+            transition: all 0.3s;
+
+            &:hover {
+                transform: translateY(-2px);
+                background: color.adjust($primary, $lightness: 5%);
+            }
         }
     }
 
@@ -113,18 +125,18 @@
         text-align: center;
         font-size: 0.95rem;
         color: #666;
+        font-weight: 300;
 
         .highlight {
             color: $primary;
             text-decoration: none;
-            font-weight: 600;
             margin-left: 6px;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            cursor: pointer;
 
             &:hover {
-                color: color.adjust($primary, $lightness: 10%);
-                text-decoration: none;
                 opacity: 0.8;
+                text-decoration: underline;
             }
         }
     }

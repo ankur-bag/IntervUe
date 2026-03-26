@@ -23,10 +23,10 @@ const Login = () => {
         <main className='auth-page'>
             <div className='mesh-bg'></div>
             <motion.div 
-                className='form-container glass-card'
+                className='form-container'
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
                 <div className='auth-header'>
                     <h1 className='home-title'>Welcome <span className='highlight'>Back</span></h1>
@@ -58,7 +58,7 @@ const Login = () => {
                         />
                     </div>
 
-                    <button className='button primary-button glow' type='submit' disabled={loading}>
+                    <button className='button primary-button' type='submit' disabled={loading}>
                        {loading ? 'Authenticating...' : 'Sign In'}
                     </button>
                 </form>

@@ -24,6 +24,23 @@ import {
 import ReactMarkdown from 'react-markdown'
 import '../style/home.scss'
 
+const Typewriter = ({ text, delay = 30 }) => {
+    const [currentText, setCurrentText] = useState('')
+    const [currentIndex, setCurrentIndex] = useState(0)
+
+    useEffect(() => {
+        if (currentIndex < text.length) {
+            const timeout = setTimeout(() => {
+                setCurrentText(prev => prev + text[currentIndex])
+                setCurrentIndex(prev => prev + 1)
+            }, delay)
+            return () => clearTimeout(timeout)
+        }
+    }, [currentIndex, delay, text])
+
+    return <span>{currentText}</span>
+}
+
 const Home = () => {
     const navigate = useNavigate()
     const reportRef = useRef(null)
@@ -33,15 +50,51 @@ const Home = () => {
     const [resumeName, setResumeName] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [analysisData, setAnalysisData] = useState(null)
-    const [jobs, setJobs] = useState([])
+    const [analysisData, setAnalysisData] = useState(() => {
+        const saved = localStorage.getItem('lastAnalysisData')
+        return saved ? JSON.parse(saved) : null
+    })
+    const [jobs, setJobs] = useState(() => {
+        const saved = localStorage.getItem('lastJobs')
+        return saved ? JSON.parse(saved) : []
+    })
     const [jobsLoading, setJobsLoading] = useState(false)
 
-    // Sync to localStorage
+    // Fetch latest report on mount
     useEffect(() => {
-        localStorage.setItem('lastJobDescription', jobDescription)
-        localStorage.setItem('lastSelfDescription', selfDescription)
-    }, [jobDescription, selfDescription])
+        const fetchLatestReport = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/interview/latest-report', {
+                    method: 'GET',
+                    credentials: 'include',
+                })
+                const result = await response.json()
+                if (response.ok && result.data) {
+                    setAnalysisData(result.data)
+                    // If we have a report, also set the inputs if they are empty
+                    if (!jobDescription) setJobDescription(result.data.jobDescription || '')
+                    if (!selfDescription) setSelfDescription(result.data.selfDescription || '')
+                    
+                    // Fetch suggestions if we have the profile
+                    if (result.data.selfDescription && jobs.length === 0) {
+                        fetchSuggestions(result.data.selfDescription)
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch latest report:', err)
+            }
+        }
+
+        fetchLatestReport()
+    }, [])
+
+    // Sync to localStorage as backup
+    useEffect(() => {
+        if (jobDescription) localStorage.setItem('lastJobDescription', jobDescription)
+        if (selfDescription) localStorage.setItem('lastSelfDescription', selfDescription)
+        if (analysisData) localStorage.setItem('lastAnalysisData', JSON.stringify(analysisData))
+        if (jobs.length > 0) localStorage.setItem('lastJobs', JSON.stringify(jobs))
+    }, [jobDescription, selfDescription, analysisData, jobs])
 
     const handleResumeSelect = (e) => {
         const file = e.target.files[0]
@@ -78,7 +131,7 @@ const Home = () => {
             setAnalysisData(result.data)
             
             // Fetch Job Suggestions concurrently
-            fetchSuggestions()
+            fetchSuggestions(selfDescription)
 
             // Auto-scroll to report
             setTimeout(() => {
@@ -92,14 +145,14 @@ const Home = () => {
         }
     }
 
-    const fetchSuggestions = async () => {
+    const fetchSuggestions = async (profile) => {
         setJobsLoading(true)
         try {
             const response = await fetch('http://localhost:3000/api/jobs/suggest', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ selfDescription })
+                body: JSON.stringify({ selfDescription: profile || selfDescription })
             })
             const result = await response.json()
             if (response.ok) {
@@ -233,12 +286,23 @@ const Home = () => {
                         >
                             {/* Dashboard Header */}
                             <div className='dashboard-header'>
-                                <div className='dash-title'>
-                                    <TrendingUp size={22} />
-                                    <h2>Your Interview <span className='highlight'>Report</span></h2>
+                                <div className='header-top'>
+                                    <div className='dash-title'>
+                                        <TrendingUp size={22} />
+                                        <h2>Your Interview <span className='highlight'>Report</span></h2>
+                                    </div>
+                                    <button 
+                                        className='button primary-button download-btn glow' 
+                                        onClick={() => window.open(`http://localhost:3000/api/interview/download-report/${analysisData._id || analysisData.id}`, '_blank')}
+                                    >
+                                        <FileText size={18} />
+                                        <span>Download Full PDF Report</span>
+                                    </button>
                                 </div>
-                                <p className='dash-subtitle'>AI-powered analysis based on your profile and target role.</p>
-                            </div>
+                                    <p className='dash-subtitle'>
+                                        <Typewriter text="AI-powered analysis based on your profile and target role." />
+                                    </p>
+                                </div>
 
                             {/* Hero Score Banner */}
                             <div className='score-banner'>
@@ -271,6 +335,68 @@ const Home = () => {
                                         />
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Relocated Job Suggestions Section */}
+                            <div className='dash-panel suggestions-section'>
+                                <div className='panel-header'>
+                                    <Briefcase size={18} className='icon-orange' />
+                                    <h3>Tailored Job Opportunities</h3>
+                                    <span className='s-tag'>Live matches</span>
+                                </div>
+                                
+                                {(() => {
+                                    const displayJobs = jobs.length > 0 ? jobs : (analysisData.jobs || []);
+                                    if (jobsLoading) return (
+                                        <div className='loading-micro'>
+                                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                                                <Sparkles size={24} className='icon-orange' />
+                                            </motion.div>
+                                            <p>Searching for best matches...</p>
+                                        </div>
+                                    );
+                                    if (displayJobs.length > 0) return (
+                                        <div className='job-suggestions-grid'>
+                                            {displayJobs.map((job, i) => (
+                                                <motion.div 
+                                                    key={i} 
+                                                    className='job-card'
+                                                    initial={{ opacity: 0, x: -20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: i * 0.1 }}
+                                                >
+                                                    <div className='job-main'>
+                                                        <div className='job-info-wrap'>
+                                                            <h4>{job.title}</h4>
+                                                            <p className='company'>{job.company}</p>
+                                                            <div className='meta'>
+                                                                <MapPin size={12} />
+                                                                <span>{job.location}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className='match-pill'>
+                                                            <Zap size={10} />
+                                                            <span>{job.matchScore || 0}% Match</span>
+                                                        </div>
+                                                    </div>
+                                                    <a 
+                                                        href={job.applyLink} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className='apply-btn'
+                                                    >
+                                                        View & Apply <ArrowUpRight size={14} />
+                                                    </a>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    );
+                                    return (
+                                        <div className='empty-jobs'>
+                                            <p>No immediate suggestions found. Try broadening your profile summary.</p>
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Two Column: Skill Gaps + Preparation */}
@@ -356,12 +482,14 @@ const Home = () => {
                                                 <p className='q-text'>{q.question}</p>
                                             </div>
                                             <div className='q-details'>
-                                                <div className='q-detail-block'>
-                                                    <span className='detail-label'>Why they ask this</span>
-                                                    <ReactMarkdown>{q.intention || q.insights}</ReactMarkdown>
+                                                <div className='q-detail-block mono-text'>
+                                                    <span className='detail-label'>AI Strategic Intent</span>
+                                                    <p className='intent-text'>
+                                                        <Typewriter text={q.intention || q.insights} delay={15} />
+                                                    </p>
                                                 </div>
-                                                <div className='q-detail-block'>
-                                                    <span className='detail-label'>Suggested approach</span>
+                                                <div className='q-detail-block mono-text suggested-approach'>
+                                                    <span className='detail-label'>Suggested Approach</span>
                                                     <ReactMarkdown>{q.answer || q.strategy}</ReactMarkdown>
                                                 </div>
                                             </div>
@@ -370,62 +498,6 @@ const Home = () => {
                                 </div>
                             </div>
 
-                            {/* Job Suggestions Section */}
-                            <div className='dash-panel suggestions-section'>
-                                <div className='panel-header'>
-                                    <Briefcase size={18} className='icon-orange' />
-                                    <h3>Tailored Job Opportunities</h3>
-                                    <span className='s-tag'>Live matches</span>
-                                </div>
-                                
-                                {jobsLoading ? (
-                                    <div className='loading-micro'>
-                                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                                            <Sparkles size={24} className='icon-orange' />
-                                        </motion.div>
-                                        <p>Searching for best matches...</p>
-                                    </div>
-                                ) : jobs.length > 0 ? (
-                                    <div className='job-suggestions-grid'>
-                                        {jobs.map((job, i) => (
-                                            <motion.div 
-                                                key={i} 
-                                                className='job-card'
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: i * 0.1 }}
-                                            >
-                                                <div className='job-main'>
-                                                    <div className='job-info-wrap'>
-                                                        <h4>{job.title}</h4>
-                                                        <p className='company'>{job.company}</p>
-                                                        <div className='meta'>
-                                                            <MapPin size={12} />
-                                                            <span>{job.location}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className='match-pill'>
-                                                        <Zap size={10} />
-                                                        <span>{job.matchScore || 0}% Match</span>
-                                                    </div>
-                                                </div>
-                                                <a 
-                                                    href={job.applyLink} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className='apply-btn'
-                                                >
-                                                    View & Apply <ArrowUpRight size={14} />
-                                                </a>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className='empty-jobs'>
-                                        <p>No immediate suggestions found. Try broadening your profile summary.</p>
-                                    </div>
-                                )}
-                            </div>
                         </motion.section>
 
                     )}

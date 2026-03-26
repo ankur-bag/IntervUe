@@ -4,11 +4,15 @@ const {
     generateATSResume, 
     generateResumePdfData 
 } = require("../services/ai.service")
+const { suggestJobs } = require("../services/jobs.service")
 
 const interviewReportModel = require("../models/interviewReport.model")
 
 
 
+
+const crypto = require("crypto")
+const redis = require("../config/redis.config")
 
 /**
  * @description Controller to generate interview report based on user self description, resume and job description.
@@ -16,6 +20,7 @@ const interviewReportModel = require("../models/interviewReport.model")
 async function generateInterviewReportController(req, res) {
     try {
         const { selfDescription, jobDescription } = req.body
+        const userId = req.user.id
         let resumeText = ""
 
         if (req.file?.buffer) {
@@ -23,25 +28,64 @@ async function generateInterviewReportController(req, res) {
             resumeText = resumeContent.text
         }
 
-        const interviewReportByAi = await generateInterviewReport({
-            resume: resumeText,
-            selfDescription,
-            jobDescription
-        })
+        // 1. Generate hash for caching AI response
+        const hash = crypto.createHash("md5").update(`${jobDescription}:${selfDescription}:${resumeText}`).digest("hex")
+        const cacheKey = `cache:interview-report:${hash}`
+        const cachedReport = await redis.get(cacheKey)
 
-        const interviewReport = await interviewReportModel.create({
-            user: req.user.id,
-            resume: resumeText,
-            selfDescription,
-            jobDescription,
-            ...interviewReportByAi
-        })
+        let interviewReport
+
+        if (cachedReport) {
+            console.log("Returning cached interview report")
+            const reportData = JSON.parse(cachedReport)
+            
+            interviewReport = await interviewReportModel.create({
+                user: userId,
+                resume: resumeText,
+                selfDescription,
+                jobDescription,
+                ...reportData
+            })
+        } else {
+            console.log("Generating new interview report via AI")
+            const interviewReportByAi = await generateInterviewReport({
+                resume: resumeText,
+                selfDescription,
+                jobDescription
+            })
+
+            interviewReport = await interviewReportModel.create({
+                user: userId,
+                resume: resumeText,
+                selfDescription,
+                jobDescription,
+                ...interviewReportByAi
+            })
+
+            // Cache the AI result for 24 hours
+            await redis.set(cacheKey, JSON.stringify(interviewReportByAi), "EX", 86400)
+        }
+
+        // 2. Fetch job suggestions and attach to the report
+        try {
+            const jobResult = await suggestJobs(selfDescription)
+            if (jobResult.jobs && jobResult.jobs.length > 0) {
+                interviewReport.jobs = jobResult.jobs
+                await interviewReport.save()
+            }
+        } catch (jobErr) {
+            console.error("Failed to fetch job suggestions for report:", jobErr.message)
+        }
+
+        // 3. Persist latest report ID for the user in Redis (Active Session)
+        const latestKey = `interview:latest:${userId}`
+        await redis.set(latestKey, interviewReport._id.toString(), "EX", 86400 * 7) // 7 days
 
         res.status(201).json({
             message: "Interview report generated successfully.",
             data: {
                 ...interviewReport.toObject(),
-                roleFit: interviewReport.matchScore // Align with frontend roleFit
+                roleFit: interviewReport.matchScore
             }
         })
     } catch (error) {
@@ -59,7 +103,6 @@ async function generateInterviewReportController(req, res) {
             error: error.message
         })
     }
-
 }
 
 /**
@@ -135,8 +178,80 @@ async function generateResumeHtmlController(req, res) {
     }
 }
 
+const reportTemplate = require("../templates/report.template")
+const { generatePdfFromHtml } = require("../services/ai.service")
+
+/**
+ * @description Controller to download interview report as PDF
+ */
+async function downloadInterviewReportController(req, res) {
+    try {
+        const { id } = req.params
+        const report = await interviewReportModel.findById(id)
+
+        if (!report) {
+            return res.status(404).json({ message: "Report not found" })
+        }
+
+        // We need to fetch jobs if they aren't in the report model
+        // Assuming they might be passed from frontend or we just use what's in DB
+        const html = reportTemplate(report)
+        const pdfBuffer = await generatePdfFromHtml(html)
+
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="Interview_Report_${id}.pdf"`)
+        res.send(pdfBuffer)
+    } catch (error) {
+        console.error("Error downloading report:", error)
+        res.status(500).json({ message: "Failed to download report", error: error.message })
+    }
+}
+
+/**
+ * @description Controller to get the latest interview report for a user
+ */
+async function getLatestInterviewReportController(req, res) {
+    try {
+        const userId = req.user.id
+        const latestKey = `interview:latest:${userId}`
+        
+        let reportId = await redis.get(latestKey)
+        let report
+
+        if (reportId) {
+            report = await interviewReportModel.findById(reportId)
+        }
+
+        if (!report) {
+            // Fallback to latest in DB if Redis key expired or missed
+            report = await interviewReportModel.findOne({ user: userId }).sort({ createdAt: -1 })
+            if (report) {
+                // Re-sync with Redis
+                await redis.set(latestKey, report._id.toString(), "EX", 86400 * 7)
+            }
+        }
+
+        if (!report) {
+            return res.status(404).json({ message: "No recent reports found" })
+        }
+
+        res.status(200).json({
+            message: "Latest report retrieved successfully",
+            data: {
+                ...report.toObject(),
+                roleFit: report.matchScore
+            }
+        })
+    } catch (error) {
+        console.error("Error fetching latest report:", error)
+        res.status(500).json({ message: "Failed to fetch latest report", error: error.message })
+    }
+}
+
 module.exports = {
     generateInterviewReportController,
     generateATSResumeController,
-    generateResumeHtmlController
+    generateResumeHtmlController,
+    downloadInterviewReportController,
+    getLatestInterviewReportController
 }

@@ -346,5 +346,6 @@ module.exports = {
     generateInterviewReport,
     generateResumePdf,
     generateATSResume,
-    generateResumePdfData
-}
+    generateResumePdfData,
+    generatePdfFromHtml
+}

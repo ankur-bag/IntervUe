@@ -97,14 +97,18 @@ async function fetchJobsFromApify(searchQuery, location = 'India') {
         }
 
         console.log(`[Jobs] Apify found ${response.data.length} raw items.`)
+        if (response.data.length > 0) {
+            console.log('[Jobs] Sample raw item keys:', Object.keys(response.data[0]))
+            console.log('[Jobs] Sample raw item:', JSON.stringify(response.data[0], null, 2))
+        }
 
-        // Normalize Apify response to our schema
+        // Normalize Apify response to our schema (handle multiple field name variants)
         return response.data.map(job => ({
-            title: job.positionName || job.title || 'Unknown Position',
-            company: job.company || 'Unknown Company',
-            location: job.location || location,
-            description: job.description || '',
-            applyLink: job.url || job.externalApplyLink || '',
+            title: job.positionName || job.jobTitle || job.title || job.name || 'Unknown Position',
+            company: job.company || job.companyName || job.employer || 'Unknown Company',
+            location: job.location || job.jobLocation || job.city || location,
+            description: job.description || job.snippet || '',
+            applyLink: job.url || job.externalApplyLink || job.link || job.applyUrl || '',
             matchScore: 0
         }))
     } catch (error) {

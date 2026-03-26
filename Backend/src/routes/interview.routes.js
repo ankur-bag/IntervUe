@@ -3,6 +3,7 @@ const authMiddleware = require("../middlewares/auth.middleware")
 const interviewController   = require("../controllers/interview.controller")
 const interviewRouter = express.Router()
 const upload = require("../middlewares/file.middleware")
+const { rateLimitInterviewGeneration } = require("../middlewares/rateLimit.middleware")
 
 
 /**
@@ -11,7 +12,14 @@ const upload = require("../middlewares/file.middleware")
  * @access private
  */
 
-interviewRouter.post("/generate-report", authMiddleware.authUser, upload.single("resume"), interviewController.generateInterviewReportController)
+interviewRouter.post("/generate-report", authMiddleware.authUser, rateLimitInterviewGeneration, upload.single("resume"), interviewController.generateInterviewReportController)
+
+/**
+ * @route GET /api/interview/latest-report
+ * @description get the latest interview report for the authenticated user
+ * @access private
+ */
+interviewRouter.get("/latest-report", authMiddleware.authUser, interviewController.getLatestInterviewReportController)
 
 /**
  * @route POST /api/interview/generate-ats-resume
@@ -26,5 +34,12 @@ interviewRouter.post("/generate-ats-resume", authMiddleware.authUser, upload.sin
  * @access private
  */
 interviewRouter.post("/generate-resume-html", authMiddleware.authUser, upload.single("resume"), interviewController.generateResumeHtmlController)
+
+/**
+ * @route GET /api/interview/download-report/:id
+ * @description download interview report as PDF
+ * @access private
+ */
+interviewRouter.get("/download-report/:id", authMiddleware.authUser, interviewController.downloadInterviewReportController)
 
 module.exports = interviewRouter

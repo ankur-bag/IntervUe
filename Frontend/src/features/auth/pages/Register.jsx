@@ -23,10 +23,10 @@ const Register = () => {
         <main className='auth-page'>
             <div className='mesh-bg'></div>
             <motion.div 
-                className='form-container glass-card'
+                className='form-container'
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             >
                 <div className='auth-header'>
                     <h1 className='home-title'>Create <span className='highlight'>Account</span></h1>
@@ -70,13 +70,13 @@ const Register = () => {
                         />
                     </div>
 
-                    <button className='button primary-button glow' type='submit' disabled={loading}>
+                    <button className='button primary-button' type='submit' disabled={loading}>
                        {loading ? 'Creating Account...' : 'Create Account'}
                     </button>
                 </form>
 
                 <p className='auth-footer'>
-                    Already have an account? <Link to="/login" className='highlight'>Login</Link>
+                    Already have an account? <Link to="/login" className='highlight'>Sign In</Link>
                 </p>
             </motion.div>
         </main>

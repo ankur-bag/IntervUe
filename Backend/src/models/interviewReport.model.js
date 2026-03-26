@@ -91,7 +91,15 @@ const interviewReportSchema = new mongoose.Schema({
     title: {
         type: String,
         required: false
-    }
+    },
+    jobs: [{
+        title: String,
+        company: String,
+        location: String,
+        description: String,
+        applyLink: String,
+        matchScore: { type: Number, default: 0 }
+    }]
 }, {
     timestamps: true
 })
