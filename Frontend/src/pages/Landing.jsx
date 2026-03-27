@@ -278,7 +278,7 @@ const Landing = () => {
                         >
                             <div className='preview-nav'>
                                 <div className='dots'><span></span><span></span><span></span></div>
-                                <div className='url-bar'>intervue.app/dashboard</div>
+                                <div className='url-bar'>https://intervue-me.vercel.app/</div>
                             </div>
                             <div className='preview-content'>
                                 <div className='skeleton-line'></div>
