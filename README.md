@@ -2,7 +2,7 @@
 
 IntervUe is a modern, full-stack application designed to help job seekers prepare for interviews through AI-powered simulations, resume generation, and job suggestions. Built with a powerful Node.js backend and a sleek React frontend, it streamlines the entire career pipeline from preparation to application.
 
-## 🚀 Features
+##  Features
 
 -   **AI Interview Coach**: Dynamic interview simulations powered by Google Gemini AI.
 -   **Automated Resume Generation**: Create professional, ATS-friendly resumes in PDF format using Puppeteer.
@@ -13,7 +13,7 @@ IntervUe is a modern, full-stack application designed to help job seekers prepar
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Frontend
 -   **Framework**: React (Vite)
@@ -31,7 +31,7 @@ IntervUe is a modern, full-stack application designed to help job seekers prepar
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 ├── Backend/          # Node.js + Express + Gemini AI Integration
@@ -47,7 +47,7 @@ IntervUe is a modern, full-stack application designed to help job seekers prepar
 
 ---
 
-## ⚙️ Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -87,7 +87,7 @@ IntervUe is a modern, full-stack application designed to help job seekers prepar
 
 ---
 
-## 📜 License
+##  License
 
 This project is licensed under the **ISC License**.
 
